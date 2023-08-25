@@ -1,5 +1,6 @@
 import { Formidable } from "formidable";
 import type { NextApiRequest, NextApiResponse } from "next";
+import NextCors from "nextjs-cors";
 
 import { prisma } from "~/server/db";
 
@@ -17,7 +18,11 @@ export default async function handler(
     res.status(405).send("Method not allowed");
     return;
   }
-
+  await NextCors(req, res, {
+    methods: ["GET", "POST", "HEAD"],
+    origin: "*",
+    optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+  });
   const form = new Formidable();
   try {
     const data = await form.parse(req);
