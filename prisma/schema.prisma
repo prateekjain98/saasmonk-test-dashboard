@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_POOLED_URL")
+  directUrl = env("POSTGRES_NON_POOLED_URL")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Conversation {
+  id           String                    @id @default(uuid())
+  createdAt    DateTime                  @default(now())
+  participants ConversationParticipant[]
+  Message      Message[]
+}
+
+enum MessageType {
+  text
+  action
+  single_choice
+}
+
+enum ActionType {
+  webchat_visibility
+  custom_event
+  webchat_config
+  book_meeting
+}
+
+model Message {
+  id                       String       @id @default(uuid())
+  type                     MessageType  @default(value: text)
+  message                  String?
+  trigger_event            String?
+  action_type              ActionType?
+  action_completed         Boolean      @default(false)
+  choices                  Json[]       @default(value: [])
+  conversation_id          String
+  sender_id                String
+  conversation             Conversation @relation(fields: [conversation_id], references: [id])
+  timestamp                DateTime     @default(now())
+  is_human_in_conversation Boolean      @default(false)
+}
+
+model ConversationParticipant {
+  id              String       @id @default(uuid())
+  conversation_id String
+  user_id         String
+  created_at      DateTime     @default(now())
+  Conversation    Conversation @relation(fields: [conversation_id], references: [id])
+}
+
+enum Event {
+  pageload
+  unload
+}
+
+model Visitor {
+  id                     String                @id @default(uuid())
+  first_seen             DateTime              @default(now())
+  first_name             String?
+  last_name              String?
+  visitor_session_events VisitorSessionEvent[]
+}
+
+model VisitorSessionEvent {
+  id           String   @id @default(uuid())
+  timestamp    DateTime @default(now())
+  event        Event
+  visitor      Visitor  @relation(fields: [visitor_id], references: [id])
+  visitor_id   String
+  page_title   String
+  page_url     String   @default("")
+  user_agent   String   @default("")
+  ip_address   String   @default("")
+  city         String   @default("")
+  country_code String   @default("")
+}
